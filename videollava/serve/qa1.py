@@ -42,9 +42,6 @@ def main(args):
         print('[WARNING] the auto inferred conversation mode is {}, while `--conv-mode` is {}, using {}'.format(conv_mode, args.conv_mode, args.conv_mode))
     else:
         args.conv_mode = conv_mode
-
-
-
     
     for dirname, _, filenames in os.walk('/kaggle/input'):
         for filename in filenames:
