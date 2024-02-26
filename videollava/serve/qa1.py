@@ -43,7 +43,7 @@ def main(args):
     else:
         args.conv_mode = conv_mode
     
-    for dirname, _, filenames in os.walk('/kaggle/input'):
+    for dirname, _, filenames in os.walk(args.video_path):
         for filename in filenames:
             conv = conv_templates[args.conv_mode].copy()
             if "mpt" in model_name.lower():
@@ -115,6 +115,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", type=str, default="LanguageBind/Video-LLaVA-7B")
     parser.add_argument("--model-base", type=str, default=None)
+    parser.add_argument("--video_path", type=str, default="/kaggle/input")
     parser.add_argument("--cache-dir", type=str, default=None)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--conv-mode", type=str, default=None)
