@@ -115,7 +115,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", type=str, default="LanguageBind/Video-LLaVA-7B")
     parser.add_argument("--model-base", type=str, default=None)
-    parser.add_argument("--video_path", type=str, default="/kaggle/input")
+    parser.add_argument("--video-path", type=str, default="/kaggle/input")
     parser.add_argument("--cache-dir", type=str, default=None)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--conv-mode", type=str, default=None)
