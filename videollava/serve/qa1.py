@@ -55,6 +55,8 @@ def main(args):
             special_token = []
             
             file = os.path.join(dirname, filename)
+            print('-' * 99)
+            print(file)
             if os.path.splitext(file)[-1].lower() in image_ext:
                 file = image_processor.preprocess(file, return_tensors='pt')['pixel_values'][0].to(model.device, dtype=torch.float16)
                 special_token += [DEFAULT_IMAGE_TOKEN]
