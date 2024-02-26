@@ -49,79 +49,72 @@ def main(args):
     else:
         roles = conv.roles
 
-    tensor = []
-    special_token = []
-    args.file = args.file if isinstance(args.file, list) else [args.file]
-    for file in args.file:
-        if os.path.splitext(file)[-1].lower() in image_ext:
-            file = image_processor.preprocess(file, return_tensors='pt')['pixel_values'][0].to(model.device, dtype=torch.float16)
-            special_token += [DEFAULT_IMAGE_TOKEN]
-        elif os.path.splitext(file)[-1].lower() in video_ext:
-            file = video_processor(file, return_tensors='pt')['pixel_values'][0].to(model.device, dtype=torch.float16)
-            special_token += [DEFAULT_IMAGE_TOKEN] * model.get_video_tower().config.num_frames
-        else:
-            raise ValueError(f'Support video of {video_ext} and image of {image_ext}, but found {os.path.splitext(file)[-1].lower()}')
-        print(file.shape)
-        tensor.append(file)
-
-
-
-    questions = ["Do you find any violence actions ?"]
-    for inp in questions:
-        # try:
-        #     inp = input(f"{roles[0]}: ")
-        # except EOFError:
-        #     inp = ""
-        # if not inp:
-        #     print("exit...")
-        #     break
-
-        print(f"{roles[1]}: ", end="")
-
-        if file is not None:
-            # first message
-            if getattr(model.config, "mm_use_im_start_end", False):
-                inp = ''.join([DEFAULT_IM_START_TOKEN + i + DEFAULT_IM_END_TOKEN for i in special_token]) + '\n' + inp
+    
+    for dirname, _, filenames in os.walk('/kaggle/input'):
+        for filename in filenames:
+            tensor = []
+            special_token = []
+            
+            file = os.path.join(dirname, filename)
+            if os.path.splitext(file)[-1].lower() in image_ext:
+                file = image_processor.preprocess(file, return_tensors='pt')['pixel_values'][0].to(model.device, dtype=torch.float16)
+                special_token += [DEFAULT_IMAGE_TOKEN]
+            elif os.path.splitext(file)[-1].lower() in video_ext:
+                file = video_processor(file, return_tensors='pt')['pixel_values'][0].to(model.device, dtype=torch.float16)
+                special_token += [DEFAULT_IMAGE_TOKEN] * model.get_video_tower().config.num_frames
             else:
-                inp = ''.join(special_token) + '\n' + inp
-            conv.append_message(conv.roles[0], inp)
-            file = None
-        else:
-            # later messages
-            conv.append_message(conv.roles[0], inp)
-        conv.append_message(conv.roles[1], None)
-        prompt = conv.get_prompt()
-
-        input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).to(model.device)
-        stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
-        keywords = [stop_str]
-        stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
-        streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
-
-        with torch.inference_mode():
-            output_ids = model.generate(
-                input_ids,
-                images=tensor,  # video as fake images
-                do_sample=True if args.temperature > 0 else False,
-                temperature=args.temperature,
-                max_new_tokens=args.max_new_tokens,
-                streamer=streamer,
-                use_cache=True,
-                stopping_criteria=[stopping_criteria])
-
-        outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
-        conv.messages[-1][-1] = outputs
-
-        if args.debug:
-            print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
-
+                raise ValueError(f'Support video of {video_ext} and image of {image_ext}, but found {os.path.splitext(file)[-1].lower()}')
+            print(file.shape)
+            tensor.append(file)
+    
+    
+            inp = "Do you find any violence actions ?"
+    
+            print(f"{roles[1]}: ", end="")
+    
+            if file is not None:
+                # first message
+                if getattr(model.config, "mm_use_im_start_end", False):
+                    inp = ''.join([DEFAULT_IM_START_TOKEN + i + DEFAULT_IM_END_TOKEN for i in special_token]) + '\n' + inp
+                else:
+                    inp = ''.join(special_token) + '\n' + inp
+                conv.append_message(conv.roles[0], inp)
+                file = None
+            else:
+                # later messages
+                conv.append_message(conv.roles[0], inp)
+            conv.append_message(conv.roles[1], None)
+            prompt = conv.get_prompt()
+    
+            input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).to(model.device)
+            stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
+            keywords = [stop_str]
+            stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
+            streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+    
+            with torch.inference_mode():
+                output_ids = model.generate(
+                    input_ids,
+                    images=tensor,  # video as fake images
+                    do_sample=True if args.temperature > 0 else False,
+                    temperature=args.temperature,
+                    max_new_tokens=args.max_new_tokens,
+                    streamer=streamer,
+                    use_cache=True,
+                    stopping_criteria=[stopping_criteria])
+    
+            outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
+            conv.messages[-1][-1] = outputs
+    
+            if args.debug:
+                print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", type=str, default="LanguageBind/Video-LLaVA-7B")
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--cache-dir", type=str, default=None)
-    parser.add_argument("--file", nargs='+', type=str, required=True)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--conv-mode", type=str, default=None)
     parser.add_argument("--temperature", type=float, default=0.2)
