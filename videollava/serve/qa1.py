@@ -68,13 +68,13 @@ def main(args):
 
     questions = ["Do you find any violence actions ?"]
     for inp in questions:
-        try:
-            inp = input(f"{roles[0]}: ")
-        except EOFError:
-            inp = ""
-        if not inp:
-            print("exit...")
-            break
+        # try:
+        #     inp = input(f"{roles[0]}: ")
+        # except EOFError:
+        #     inp = ""
+        # if not inp:
+        #     print("exit...")
+        #     break
 
         print(f"{roles[1]}: ", end="")
 
