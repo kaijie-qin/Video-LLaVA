@@ -43,15 +43,17 @@ def main(args):
     else:
         args.conv_mode = conv_mode
 
-    conv = conv_templates[args.conv_mode].copy()
-    if "mpt" in model_name.lower():
-        roles = ('user', 'assistant')
-    else:
-        roles = conv.roles
+
 
     
     for dirname, _, filenames in os.walk('/kaggle/input'):
         for filename in filenames:
+            conv = conv_templates[args.conv_mode].copy()
+            if "mpt" in model_name.lower():
+                roles = ('user', 'assistant')
+            else:
+                roles = conv.roles
+            
             tensor = []
             special_token = []
             
